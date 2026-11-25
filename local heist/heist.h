@@ -186,4 +186,146 @@ public:
 
     friend class GameEngine;
 };
+class Victim : public Character {
+public:
+    Victim(const string& n, const string& nat) : Character(n, "victim", nat) {}
+    void display() const { cout << getname() << " (victim, " << getnationality() << ")"; }
+};
+class Detective : public Character {
+private:
+    int credibility;
+    int turns;
+    TileRack rack1;
+    TileRack rack2;
+public:
+
+    Detective(const string& n = "agent", const string& nat = "malay")
+        : Character(n, "detective", nat), credibility(100), turns(0), rack1(7), rack2(8) {
+    }
+    void display() const { cout << "detective " << getname(); }
+    int getcredibility() const { return credibility; }
+    void setcredibility(int c) { credibility = c; }
+    void losecredibility(int amount) {
+        credibility = credibility - amount;
+        if (credibility < 0) credibility = 0;
+    }
+    int getturns() const { return turns; }
+    void addturn() { turns++; }
+    TileRack& getrack(WordRow r) { return (r == word_1) ? rack1 : rack2; }
+    void showracks() const;
+};
+
+class Suspect : public Character {
+public:
+    Suspect(const string& n, const string& r, const string& nat) : Character(n, r, nat) {}
+    void display() const { cout << getname() << " (" << getrole() << ", " << getnationality() << ")"; }
+};
+
+// virtual inheritance, so pa gets only one suspect part
+// this solves the diamond problem
+class BusinessRelations : virtual public Suspect {
+public:
+    BusinessRelations(const string& n, const string& r, const string& nat) : Suspect(n, r, nat) {}
+};
+
+class CloseRelations : virtual public Suspect {
+public:
+    CloseRelations(const string& n, const string& r, const string& nat) : Suspect(n, r, nat) {}
+};
+
+class HouseHelp : public Suspect {
+public:
+    HouseHelp(const string& n, const string& r, const string& nat) : Suspect(n, r, nat) {}
+};
+
+class Cook : public HouseHelp {
+public:
+    Cook(const string& n, const string& nat) : HouseHelp(n, "cook", nat) {}
+};
+
+class Guard : public HouseHelp {
+public:
+    Guard(const string& n, const string& nat) : HouseHelp(n, "guard", nat) {}
+};
+
+class Servant : public HouseHelp {
+public:
+    Servant(const string& n, const string& nat) : HouseHelp(n, "servant", nat) {}
+};
+
+// the last class must call the virtual base class suspect itself
+class Partner : public BusinessRelations {
+public:
+    Partner(const string& n, const string& r, const string& nat)
+        : Suspect(n, r, nat), BusinessRelations(n, r, nat) {
+    }
+};
+
+class Child : public CloseRelations {
+public:
+    Child(const string& n, const string& nat)
+        : Suspect(n, "child", nat), CloseRelations(n, "child", nat) {
+    }
+};
+
+class PA : public BusinessRelations, public CloseRelations {
+public:
+    PA(const string& n, const string& nat)
+        : Suspect(n, "pa", nat), BusinessRelations(n, "pa", nat), CloseRelations(n, "pa", nat) {
+    }
+};
+
+
+class ScoreBoard {
+public:
+    void add(const string& name, const string& result, int credibility, int turnsleft, const string& culprit) const;
+    void show() const;
+};
+
+// singleton class, only one object can be made
+class GameEngine {
+private:
+    static GameEngine* instance;        // points to the only object
+    GameState state;
+    Detective detective;
+    Cottage cottage;
+    Scrabble scrabble;
+    ScoreBoard scoreboard;
+    Character* chars[8];
+    int charcount;
+    int maxturns, startcredibility, steppenalty, wordpenalty;
+    string culpritrole, culpritname;
+
+    // private constructor, so nobody can make an object from outside
+    GameEngine();
+    GameEngine(const GameEngine&);
+    GameEngine& operator=(const GameEngine&);
+    string input(const string& prompt);
+    int readnumber(const string& prompt, int lo, int hi);
+    void loadrules();
+    void loadclue(string& w1, string& w2);
+    void loadcharacters(int index);
+    Character* makecharacter(const string& name, const string& role, const string& nat);
+    void clearchars();
+    void showrules() const;
+    void showstatus() const;
+    void showfile(const string& filename) const;
+
+    void showmenu();
+    void startgame();
+    void playgame();
+    void visit();
+    void interview();
+    void formword();
+    void accuse();
+    void useturn();
+    void checkend();
+    void finishgame();
+public:
+    ~GameEngine();
+    static GameEngine* getinstance();
+    static void destroyinstance();
+    void run();
+};
 #endif
+
