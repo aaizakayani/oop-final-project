@@ -406,3 +406,59 @@ void GameEngine::interview() {
     cout << who->getname() << " gave the letter '" << c.letter << "' for position " << c.position << " of word 2.\n";
     useturn();
 }
+void GameEngine::formword() {
+    int r = readnumber("which row? [1] word 1  [2] word 2: ", 1, 2);
+    WordRow row = (r == 1) ? word_1 : word_2;
+
+    if (scrabble.issolved(row)) throw InvalidMoveException("that word is already solved");
+    if (!scrabble.rowfull(row)) throw InvalidMoveException("that row still has empty slots");
+
+    string guess = lower(input("type the word: "));
+    useturn();
+    if (scrabble.checkword(row, guess)) {
+        cout << "correct word!\n";
+        if (scrabble.bothsolved())
+            cout << "both words solved: " << scrabble.getword(word_1) << " and " << scrabble.getword(word_2)
+            << ". they point to the culprit!\n";
+    }
+    else {
+        detective.losecredibility(wordpenalty);
+        cout << "wrong word! -" << wordpenalty << " credibility\n";
+    }
+}
+
+void GameEngine::accuse() {
+    cout << "\n suspects \n";
+    for (int i = 0; i < charcount; i++) {
+        if (chars[i]->getrole() == "victim") continue;
+        cout << " [" << i + 1 << "] ";
+        chars[i]->display();
+        cout << "\n";
+    }
+    int pick = readnumber("accuse number: ", 1, charcount);
+    Character* who = chars[pick - 1];
+    if (who->getrole() == "victim")
+        throw InvalidInputException("the victim cannot be accused");
+
+    useturn();
+    if (who->isculprit()) {
+        cout << who->getname() << " is the culprit!\n";
+        state = state_won;
+    }
+    else {
+        detective.losecredibility(steppenalty);
+        cout << who->getname() << " is not the culprit! -" << steppenalty << " credibility\n";
+    }
+}
+
+void GameEngine::finishgame() {
+    bool won = (state == state_won);
+    int turnsleft = maxturns - detective.getturns();
+    if (turnsleft < 0) turnsleft = 0;
+
+    cout << "\n=== " << detective.getname() << (won ? " wins!" : " loses!") << " ===\n";
+    cout << "the culprit was " << culpritname << " (" << culpritrole << ").\n";
+
+    state = state_menu;
+    scoreboard.add(detective.getname(), won ? "win" : "lose", detective.getcredibility(), turnsleft, culpritrole);
+}
