@@ -317,3 +317,92 @@ void GameEngine::showmenu() {
     else if (choice == 4) { loadrules(); showrules(); }
     else { state = state_exit; cout << "goodbye, detective!\n"; }
 }
+void GameEngine::startgame() {
+    string name = input("enter detective name (use _ or . instead of space): ");
+    while (name == "" || name.find(' ') != string::npos) {
+        cout << "heist error: the name cannot be empty or have spaces\n";
+        name = input("enter detective name: ");
+    }
+    loadrules();
+    int index = rand() % 7;
+    culpritrole = roles[index];
+    string w1, w2;
+    loadclue(w1, w2);
+    scrabble = Scrabble();
+    scrabble.setwords(w1, w2);
+    cottage.load(index);
+    loadcharacters(index);
+
+    detective = Detective(name);
+    detective.setcredibility(startcredibility);
+    state = state_playing;
+
+    cout << "\nwelcome, " << name << "! one of the 7 suspects is the culprit. find them!\n";
+    showrules();
+}
+
+void GameEngine::useturn() {
+    detective.addturn();
+    cout << "(turn " << detective.getturns() << " used)\n";
+}
+
+void GameEngine::playgame() {
+    showstatus();
+    cout << " [1] visit a location\n [2] interview a person\n [3] form a word\n"
+        << " [4] accuse a suspect\n [5] quit\n";
+    int choice = readnumber("choice: ", 1, 5);
+    if (choice == 1) visit();
+    else if (choice == 2) interview();
+    else if (choice == 3) formword();
+    else if (choice == 4) accuse();
+    else { state = state_menu; cout << "you left the case.\n"; }
+    checkend();
+}
+
+void GameEngine::checkend() {
+    if (state != state_playing) return;
+    if (detective.getcredibility() <= 0 || detective.getturns() >= maxturns)
+        state = state_lost;
+}
+
+void GameEngine::visit() {
+    cottage.show();
+    int pick = readnumber("pick a location: ", 1, cottage.getcount());
+    Location& loc = cottage.get(pick - 1);
+
+    if (loc.searched) {
+        detective.losecredibility(steppenalty);
+        cout << "you already searched " << loc.name << ". -" << steppenalty << " credibility\n";
+        useturn();
+        return;
+    }
+    scrabble.place(loc.clue);
+    detective.getrack(word_1).addclue(loc.clue);
+    loc.searched = true;
+    cout << "you found the letter '" << loc.clue.letter << "' for position " << loc.clue.position << " of word 1.\n";
+    useturn();
+}
+
+void GameEngine::interview() {
+    cout << "\n people \n";
+    for (int i = 0; i < charcount; i++) {
+        cout << " [" << i + 1 << "] ";
+        chars[i]->display();
+        cout << (chars[i]->isinterviewed() ? "  (interviewed)" : "  (not interviewed)") << "\n";
+    }
+    int pick = readnumber("pick a person: ", 1, charcount);
+    Character* who = chars[pick - 1];
+
+    if (who->isinterviewed()) {
+        detective.losecredibility(steppenalty);
+        cout << "you already interviewed " << who->getname() << ". -" << steppenalty << " credibility\n";
+        useturn();
+        return;
+    }
+    Clue c = who->getclue();
+    scrabble.place(c);
+    detective.getrack(word_2).addclue(c);
+    who->setinterviewed();
+    cout << who->getname() << " gave the letter '" << c.letter << "' for position " << c.position << " of word 2.\n";
+    useturn();
+}
