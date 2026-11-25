@@ -1,0 +1,8 @@
+Culprit_Role|Word_1|Word_2
+cook|alfredo|spagheti
+guard|germans|shepherd
+servant|looters|heritage
+partner_1|trident|sunbloom
+partner_2|mikhail|rasputin
+pa|pharaoh|pyramids
+child|renoirs|burglary
