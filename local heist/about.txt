@@ -1,0 +1,19 @@
+THE LOCKER HEIST
+A Detective Game backed by OOP Principles
+
+Developed By:
+  [Student 1 Name] | [25F-3066]
+  [Student 2 Name] | [25F-3008]
+
+Course: CL1004 - Object Oriented Programming
+Section: SE - 3 - A
+Semester: Fall 2026
+Lab Instructor: [Mozeb]
+
+A wealthy business owner hosted a party at their cottage.
+During the party, a locker hidden behind a bookshelf in
+the Study Room was robbed. Eight people were present in the
+cottage and one of them is the culprit. You are the
+detective hired by the owner's PA to solve the case.
+
+Good luck, Detective.
