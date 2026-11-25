@@ -243,3 +243,77 @@ Character* GameEngine::makecharacter(const string& name, const string& role, con
     if (role == "partner_1" || role == "partner_2") return new Partner(name, role, nat);
     throw FileException("characters.txt has an unknown role: " + role);
 }
+void GameEngine::loadcharacters(int index) {
+    ifstream file("characters.txt");
+    if (!file) throw FileException("characters.txt was not found");
+    clearchars();
+
+    string line;
+    getline(file, line);
+    while (getline(file, line)) {
+        if (line == "") continue;
+        string p[12];
+        if (split(line, p, 12) < 12 || charcount >= 8)
+            throw FileException("characters.txt is not correct");
+
+        Character* c = makecharacter(lower(p[0]), lower(p[1]), lower(p[2]));
+        chars[charcount++] = c;
+        c->setclue(lower(p[4 + index])[0], atoi(p[3].c_str()));
+        if (lower(p[1]) == culpritrole) {
+            c->culprit = true;              // allowed because gameengine is a friend
+            culpritname = c->getname();
+        }
+    }
+    if (charcount != 8) throw FileException("characters.txt must have 8 people");
+}
+
+void GameEngine::showrules() const {
+    cout << "\n--- rules ---\n";
+    cout << " maximum turns        : " << maxturns << "\n";
+    cout << " starting credibility : " << startcredibility << "\n";
+    cout << " every wrong turn     : -" << steppenalty << " credibility\n";
+    cout << " every wrong word     : -" << wordpenalty << " credibility\n";
+    cout << " you win if you accuse the right culprit.\n";
+    cout << " you lose if credibility reaches 0 or the turns are over.\n";
+}
+
+void GameEngine::showstatus() const {
+    cout << "\n------------------------------------------\n";
+    cout << " credibility: " << detective.getcredibility()
+        << " | turns used: " << detective.getturns() << "/" << maxturns << "\n";
+    detective.showracks();
+    cout << scrabble;
+    cout << "------------------------------------------\n";
+}
+
+void GameEngine::showfile(const string& filename) const {
+    ifstream file(filename.c_str());
+    if (!file) throw FileException(filename + " was not found");
+    string line;
+    cout << "\n";
+    while (getline(file, line)) cout << lower(line) << "\n";
+}
+void GameEngine::run() {
+    cout << "=== the locker heist ===\n";
+    while (state != state_exit) {
+        try {
+            if (state == state_menu) showmenu();
+            else if (state == state_playing) playgame();
+            else finishgame();
+        }
+        catch (GameException& e) {
+            cout << e.what() << "\n";
+        }
+    }
+}
+
+void GameEngine::showmenu() {
+    cout << "\n main menu \n";
+    cout << " [1] new game\n [2] score board\n [3] about\n [4] rules\n [5] exit\n";
+    int choice = readnumber("choice: ", 1, 5);
+    if (choice == 1) startgame();
+    else if (choice == 2) scoreboard.show();
+    else if (choice == 3) showfile("about.txt");
+    else if (choice == 4) { loadrules(); showrules(); }
+    else { state = state_exit; cout << "goodbye, detective!\n"; }
+}
