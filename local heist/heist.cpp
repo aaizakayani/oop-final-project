@@ -192,3 +192,54 @@ int GameEngine::readnumber(const string& prompt, int lo, int hi) {
     return n;
 }
 // if rules.txt is missing the default rules are used
+void GameEngine::loadrules() {
+    maxturns = 25;
+    startcredibility = 100;
+    steppenalty = 5;
+    wordpenalty = 10;
+    ifstream file("rules.txt");
+    if (!file) {
+        cout << "rules.txt was not found, default rules are used\n";
+        return;
+    }
+    string line;
+    while (getline(file, line)) {
+        int eq = (int)line.find('=');
+        if (eq == (int)string::npos) continue;
+        string key = lower(line.substr(0, eq));
+        int value = atoi(line.substr(eq + 1).c_str());
+        if (value < 0) value = -value;      // file has -5 but we keep 5
+        if (key == "max_turns") maxturns = value;
+        else if (key == "starting_credibility") startcredibility = value;
+        else if (key == "every_wrong_turn") steppenalty = value;
+        else if (key == "every_wrong_word") wordpenalty = value;
+    }
+}
+
+// finds the culprit line in clue.txt and gives back the two words
+void GameEngine::loadclue(string& w1, string& w2) {
+    ifstream file("clue.txt");
+    if (!file) throw FileException("clue.txt was not found");
+    string line;
+    getline(file, line);
+    while (getline(file, line)) {
+        string p[3];
+        if (split(line, p, 3) < 3) continue;
+        if (lower(p[0]) == culpritrole) {
+            w1 = p[1];
+            w2 = p[2];
+            return;
+        }
+    }
+    throw FileException("clue.txt has no line for " + culpritrole);
+}
+Character* GameEngine::makecharacter(const string& name, const string& role, const string& nat) {
+    if (role == "victim") return new Victim(name, nat);
+    if (role == "cook") return new Cook(name, nat);
+    if (role == "guard") return new Guard(name, nat);
+    if (role == "servant") return new Servant(name, nat);
+    if (role == "child") return new Child(name, nat);
+    if (role == "pa") return new PA(name, nat);
+    if (role == "partner_1" || role == "partner_2") return new Partner(name, role, nat);
+    throw FileException("characters.txt has an unknown role: " + role);
+}
